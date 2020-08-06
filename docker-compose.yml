@@ -1,0 +1,160 @@
+version: '3.6'
+services:
+  openldap:
+#    build: ./extend-osixia-openldap
+    image: jahia/docker-openldap:1.0.0
+    container_name: openldap
+    tty: true
+    stdin_open: true
+    environment:
+      - TZ=America/Toronto
+      - LDAP_ORGANISATION=Jahia Inc.
+      - LDAP_DOMAIN=jahia.com
+      - LDAP_ADMIN_PASSWORD=Adm1n!
+    ports:
+      - "389:389"
+      - "636:636"
+    # For replication to work correctly, domainname and hostname must be
+    # set correctly so that "hostname"."domainname" equates to the
+    # fully-qualified domain name for the host.
+    domainname: "docker.jahia.org"
+    hostname: "ldap-server"
+    networks:
+      - stack
+
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:latest
+    container_name: phpldapadmin
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "openldap"
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "9080:80"
+    depends_on:
+      - openldap
+    networks:
+      - stack
+
+  elasticsearch:
+    build: ./extend-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - TZ=America/Toronto
+    container_name: elastic-server
+    ports:
+      - 9200:9200
+    networks:
+      - stack
+
+  elasticsearch_cluster:
+    build: ./extend-elasticsearch
+    container_name: elasticsearch_cluster
+    environment:
+      - node.name=elasticsearch_cluster
+      - node.master=true
+      - node.data=false
+      - cluster.initial_master_nodes=elasticsearch_cluster,elasticsearch_cluster2
+      - discovery.seed_hosts=elasticsearch_cluster2:9300
+      - TZ=America/Toronto
+    ports:
+      - 9200:9200
+    networks:
+      - stack
+
+  elasticsearch_cluster2:
+    build: ./extend-elasticsearch
+    container_name: elasticsearch_cluster2
+    environment:
+      - node.name=elasticsearch_cluster2
+      - node.data=true
+      - cluster.initial_master_nodes=elasticsearch_cluster,elasticsearch_cluster2
+      - discovery.seed_hosts=elasticsearch_cluster:9300
+      - TZ=America/Toronto
+    networks:
+      - stack
+
+  elasticsearch_cluster3:
+    build: ./extend-elasticsearch
+    container_name: elasticsearch_cluster3
+    environment:
+      - node.name=elasticsearch_cluster3
+      - node.data=true
+      - node.master=false
+      - cluster.initial_master_nodes=elasticsearch_cluster,elasticsearch_cluster2
+      - discovery.seed_hosts=elasticsearch_cluster:9300
+      - TZ=America/Toronto
+    networks:
+      - stack
+
+  elasticsearchstd:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+    environment:
+      - discovery.type=single-node
+      - TZ=America/Toronto
+    container_name: elastic-std
+    networks:
+      - stack
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.8.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elastic-server:9200
+      - TZ=America/Toronto
+    container_name: kibana-server
+    ports:
+      - 5601:5601
+    networks:
+      - stack
+
+
+  jahia:
+    image: jahia/jahia-dev:7.3.5.0
+    container_name: jahia-server
+    environment:
+      - jahia_cfg_karaf_remoteShellHost=0.0.0.0
+      - TZ=America/Toronto
+      - JAHIA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
+      - JAHIA_JAVA_XMS=2048m
+      - JAHIA_JAVA_XMX=4096m
+    ports:
+      - 8080:8080
+      - 8101:8101
+      - 8000:8000
+    networks:
+      - stack
+
+  jahia8:
+    image: jahia/jahia-dev:8.0.0.0
+    container_name: jahia8-server
+    environment:
+      - jahia_cfg_karaf_remoteShellHost=0.0.0.0
+      - TZ=America/Toronto
+      - JAHIA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
+      - JAHIA_JAVA_XMS=2048m
+      - JAHIA_JAVA_XMX=4096m
+    ports:
+      - 9080:8080
+      - 9101:8101
+      - 9000:8000
+    networks:
+      - stack
+
+  jahialatest:
+    image: jahia/jahia-private:snapshot
+    container_name: jahialatest-server
+    environment:
+      - jahia_cfg_karaf_remoteShellHost=0.0.0.0
+      - TZ=America/Toronto
+      - JAHIA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
+      - JAHIA_JAVA_XMS=2048m
+      - JAHIA_JAVA_XMX=4096m
+    ports:
+      - 9080:8080
+      - 9101:8101
+      - 9000:8000
+    networks:
+      - stack
+
+networks:
+  stack:
