@@ -1,2 +1,4 @@
 /8_X_modules/
 /7_3_X_modules/
+*.iml
+.idea/
