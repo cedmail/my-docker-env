@@ -1,7 +1,7 @@
 version: '3.6'
 services:
   openldap:
-#    build: ./extend-osixia-openldap
+    #    build: ./extend-osixia-openldap
     image: jahia/docker-openldap:1.0.0
     container_name: openldap
     tty: true
@@ -41,7 +41,14 @@ services:
     environment:
       - discovery.type=single-node
       - TZ=America/Toronto
+      - ES_JAVA_OPTS=-Xms4g -Xmx4g
     container_name: elastic-server
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
     networks:
@@ -93,6 +100,8 @@ services:
       - discovery.type=single-node
       - TZ=America/Toronto
     container_name: elastic-std
+    ports:
+      - 9201:9200
     networks:
       - stack
 
@@ -107,6 +116,16 @@ services:
     networks:
       - stack
 
+  mariadb:
+    image: mariadb:10wsing th
+    networks:
+      - stack
+    command: --max_allowed_packet=134217728
+    environment:
+      MYSQL_ROOT_PASSWORD: mariadbP@55
+      MYSQL_DATABASE: jahia
+      MYSQL_USER: jahia
+      MYSQL_PASSWORD: jahia
 
   jahia:
     image: jahia/jahia-dev:7.3.5.0
@@ -115,8 +134,8 @@ services:
       - jahia_cfg_karaf_remoteShellHost=0.0.0.0
       - TZ=America/Toronto
       - JAHIA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
-      - JAHIA_JAVA_XMS=2048m
-      - JAHIA_JAVA_XMX=4096m
+      - JAHIA_JAVA_XMS=4g
+      - JAHIA_JAVA_XMX=4g
     ports:
       - 8080:8080
       - 8101:8101
@@ -125,14 +144,14 @@ services:
       - stack
 
   jahia8:
-    image: jahia/jahia-dev:8.0.0.0
+    image: jahia/jahia-dev:8.0.1.0
     container_name: jahia8-server
     environment:
       - jahia_cfg_karaf_remoteShellHost=0.0.0.0
       - TZ=America/Toronto
       - JAHIA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
-      - JAHIA_JAVA_XMS=2048m
-      - JAHIA_JAVA_XMX=4096m
+      - JAHIA_JAVA_XMS=4g
+      - JAHIA_JAVA_XMX=4g
     ports:
       - 9080:8080
       - 9101:8101
@@ -147,14 +166,18 @@ services:
       - jahia_cfg_karaf_remoteShellHost=0.0.0.0
       - TZ=America/Toronto
       - JAHIA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
-      - JAHIA_JAVA_XMS=2048m
-      - JAHIA_JAVA_XMX=4096m
+      - JAHIA_JAVA_XMS=4g
+      - JAHIA_JAVA_XMX=4g
     ports:
       - 9080:8080
       - 9101:8101
       - 9000:8000
     networks:
       - stack
+
+volumes:
+  data01:
+    driver: local
 
 networks:
   stack:
