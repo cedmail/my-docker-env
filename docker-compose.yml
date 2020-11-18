@@ -117,7 +117,7 @@ services:
       - stack
 
   mariadb:
-    image: mariadb:10wsing th
+    image: library/mariadb:10-focal
     networks:
       - stack
     command: --max_allowed_packet=134217728
@@ -126,6 +126,8 @@ services:
       MYSQL_DATABASE: jahia
       MYSQL_USER: jahia
       MYSQL_PASSWORD: jahia
+    volumes:
+      - dataDB:/var/lib/mysql
 
   jahia:
     image: jahia/jahia-dev:7.3.5.0
@@ -175,8 +177,54 @@ services:
     networks:
       - stack
 
+  jahia-processing:
+    image: jahia/jahia:8.0.1.0
+    restart: "no"
+    networks:
+      - stack
+    depends_on:
+      - mariadb
+    ports:
+      - "8080:8080"
+    command: bash -c '/entrypoint.sh'
+    environment:
+      DBMS_TYPE: mariadb
+      DB_HOST: mariadb
+      DB_NAME: jahia
+      DB_USER: jahia
+      DB_PASS: jahia
+      SUPER_USER_PASSWORD: root
+      OPERATING_MODE: development
+      PROCESSING_SERVER: "true"
+      RESTORE_MODULE_STATES: "false"
+
+  jahia-browsing:
+    image: jahia/jahia:8.0.1.0
+    restart: "no"
+    networks:
+      - stack
+    depends_on:
+      - mariadb
+    ports:
+      - 9080:8080
+      - 9101:8101
+      - 9000:8000
+    command: bash -c '/entrypoint.sh'
+    environment:
+      DBMS_TYPE: mariadb
+      DB_HOST: mariadb
+      DB_NAME: jahia
+      DB_USER: jahia
+      DB_PASS: jahia
+      SUPER_USER_PASSWORD: root
+      OPERATING_MODE: development
+      PROCESSING_SERVER: "false"
+      RESTORE_MODULE_STATES: "false"
+
 volumes:
   data01:
+    driver: local
+  dataDB:
     driver: local
 
 networks:
