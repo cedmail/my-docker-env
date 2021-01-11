@@ -197,6 +197,7 @@ services:
       OPERATING_MODE: development
       PROCESSING_SERVER: "true"
       RESTORE_MODULE_STATES: "false"
+      TZ: "America/Toronto"
 
   jahia-browsing:
     image: jahia/jahia:8.0.1.0
@@ -220,6 +221,7 @@ services:
       OPERATING_MODE: development
       PROCESSING_SERVER: "false"
       RESTORE_MODULE_STATES: "false"
+      TZ: "America/Toronto"
 
 volumes:
   data01:
